@@ -1,0 +1,3 @@
+[submodule "src/pepper_ws"]
+	path = src/pepper_ws
+	url = https://github.com/GetAGrip-dot-Ai/pepper_ws.git
