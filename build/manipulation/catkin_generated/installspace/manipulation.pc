@@ -1,8 +1,0 @@
-prefix=/home/sridevi/xarm_ws/install
-
-Name: manipulation
-Description: Description of manipulation
-Version: 0.0.0
-Cflags: -I${prefix}/include -I/usr/local/include/eigen3
-Libs: -L${prefix}/lib 
-Requires: sawyer_moveit moveit_visual_tools moveit_ros_planning_interface moveit_ros_move_group move_group_interface interactive_markers tf2_geometry_msgs message_runtime
