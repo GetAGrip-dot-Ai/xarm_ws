@@ -247,6 +247,11 @@ bool cartMoveToPoi(){
   }
   return false;
 
+  std::vector<double> rpy = move_group_interface.getCurrentRPY();
+  ROS_WARN_STREAM(rpy[0]);
+  ROS_WARN_STREAM(rpy[1]);
+  ROS_WARN_STREAM(rpy[2]);
+
 }
 
 // cartesian move back to pregrasp pose
@@ -420,10 +425,10 @@ int main(int argc, char** argv)
   target_pose.position.z = 0.7;
 
   // move to pose with orientation constrained (hard-coded)
-  // moveToPoseConstrained(target_pose);
+  moveToPoseConstrained(target_pose);
 
   // series of cartesian moves
-  cartMoveToPoi();
+  // cartMoveToPoi();
 
   // multiframe rotation move
   // mfRotation();
