@@ -131,7 +131,7 @@ bool moveToPose(geometry_msgs::Pose target_pose){
   // we call the planner to compute the plan and visualize it.
   // move_group_interface.setPlanningTime(15.0);
   tf2::Quaternion q;
-  q.setRPY(-M_PI/2,-M_PI/2,-M_PI/2);; //kinova //! change
+  q.setRPY(-M_PI/2,-M_PI/2,-M_PI/2);  //! change
   geometry_msgs::Quaternion quat;
   quat = tf2::toMsg(q);
   geometry_msgs::Pose constrained_pose;
@@ -200,13 +200,13 @@ bool cartMoveToPoi(){
     return false;
   }
 
-  // Set the execution duration of the trajectory
-  const double duration = 10; // 15; //! change
-  double traj_duration = trajectory.joint_trajectory.points.back().time_from_start.toSec();
-  double scale = duration / traj_duration;
-  for (auto& point : trajectory.joint_trajectory.points) {
-    point.time_from_start *= scale;
-  }
+  // Set the execution duration of the trajectory -- for kinova
+  // const double duration = 10; // 15;
+  // double traj_duration = trajectory.joint_trajectory.points.back().time_from_start.toSec();
+  // double scale = duration / traj_duration;
+  // for (auto& point : trajectory.joint_trajectory.points) {
+  //   point.time_from_start *= scale;
+  // }
 
   // Visualize the plan in RViz
   visual_tools.deleteAllMarkers();
@@ -260,13 +260,13 @@ bool cartMoveToPreGrasp(){
     return false;
   }
 
-  // Set the execution duration of the trajectory
-  const double duration = 50; //! change?
-  double traj_duration = trajectory.joint_trajectory.points.back().time_from_start.toSec();
-  double scale = duration / traj_duration;
-  for (auto& point : trajectory.joint_trajectory.points) {
-    point.time_from_start *= scale;
-  }
+  // Set the execution duration of the trajectory -- 
+  // const double duration = 50;
+  // double traj_duration = trajectory.joint_trajectory.points.back().time_from_start.toSec();
+  // double scale = duration / traj_duration;
+  // for (auto& point : trajectory.joint_trajectory.points) {
+  //   point.time_from_start *= scale;
+  // }
 
   // Visualize the plan in RViz
   visual_tools.deleteAllMarkers();
@@ -323,7 +323,7 @@ bool moveToBasket(){
   }
 
   // set new J0 value
-  joint_group_positions[0] = J0+alpha+M_PI/3; // move 60 degrees
+  joint_group_positions[0] = J0+alpha+M_PI/3; // move 60 degrees //! need to tune
   move_group_interface.setJointValueTarget(joint_group_positions);
 
   moveit::planning_interface::MoveGroupInterface::Plan my_plan;
@@ -385,7 +385,6 @@ bool moveToPG2ForVS() {
   constrained_pose.position.x = current_pose.position.x + dx - pregrasp_offset; //! change?
   ROS_GREEN_STREAM("PRE GRASP 2 FOR VS (poi minus offset in x)");
   ROS_GREEN_STREAM(constrained_pose);
-  move_group_interface.setPoseTarget(constrained_pose);
 
   // make plan
   moveit::planning_interface::MoveGroupInterface::Plan my_plan;
@@ -626,7 +625,7 @@ bool harvestSrvCallback(manipulation::harvest::Request& request, manipulation::h
         ROS_INFO("Received Response");
         ROS_RED_STREAM("response from perception");
 
-        // check reply
+        // check
         int did_vs = vs_srv.response.reply;
         // ros::Duration(5).sleep();
 
