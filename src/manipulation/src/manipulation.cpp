@@ -492,19 +492,19 @@ bool harvestSrvCallback(manipulation::harvest::Request& request, manipulation::h
       std::cout << "going to approach position "<< approach_pose_num << std::endl;
       bool moved;
       if (approach_pose_num == 0){ // approach pose 1
-        approach_pose.position.x = 0.15;
+        approach_pose.position.x = 0.3;
         approach_pose.position.y = 0;
         approach_pose.position.z = 0.65;
         moved = moveToPose(approach_pose);
       }
       else if (approach_pose_num == 1){ // approach pose 2
-        approach_pose.position.x = 0.1;
+        approach_pose.position.x = 0.3;
         approach_pose.position.y = 0.16;
         approach_pose.position.z = 0.6;
         moved = moveToPose(approach_pose);
       }
       else if (approach_pose_num == 2){ // approach pose 3
-        approach_pose.position.x = 0.1;
+        approach_pose.position.x = 0.3;
         approach_pose.position.y = 0.03;
         approach_pose.position.z = 0.56;
         moved = moveToPose(approach_pose);
