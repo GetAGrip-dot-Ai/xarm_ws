@@ -425,10 +425,10 @@ int main(int argc, char** argv)
   target_pose.position.z = 0.7;
 
   // move to pose with orientation constrained (hard-coded)
-  moveToPoseConstrained(target_pose);
+  // moveToPoseConstrained(target_pose);
 
   // series of cartesian moves
-  // cartMoveToPoi();
+  cartMoveToPoi();
 
   // multiframe rotation move
   // mfRotation();

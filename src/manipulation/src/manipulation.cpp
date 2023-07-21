@@ -372,7 +372,8 @@ bool moveToPG2ForVS() {
 
   // we call the planner to compute the plan and visualize it.
   tf2::Quaternion q;
-  q.setRPY(-M_PI/2,-M_PI/2,-M_PI/2);; //kinovas
+  q.setRPY(-M_PI/2,-M_PI/2,-M_PI/2);
+  // q.setRPY(0,M_PI/2,0);; //kinovas
   geometry_msgs::Quaternion quat;
   quat = tf2::toMsg(q);
   geometry_msgs::Pose constrained_pose;
@@ -473,8 +474,8 @@ bool harvestSrvCallback(manipulation::harvest::Request& request, manipulation::h
 
   switch (state) {
     case 0:{ // move to reset pose
-      std::cout << "moving to reset pose" << std::endl;
-      reset_pose.position.x = 0.1;
+      std::cout << "moving to rest pose" << std::endl;
+      reset_pose.position.x = 0.4;
       reset_pose.position.y = 0;
       reset_pose.position.z = 0.5;
       bool success = moveToPose(reset_pose);
