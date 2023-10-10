@@ -164,9 +164,12 @@ catkin_package(
 )
 
 add_executable(manipulation src/manipulation.cpp)
+add_executable(testing src/testing.cpp)
+add_executable(virtual_walls src/virtual_walls.cpp)
 add_dependencies(manipulation ${catkin_EXPORTED_TARGETS})
-# add_dependencies(manipulation manipulation_cpp)
 target_link_libraries(manipulation ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(testing ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(virtual_walls ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 install(TARGETS manipulation DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 install(DIRECTORY launch DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 

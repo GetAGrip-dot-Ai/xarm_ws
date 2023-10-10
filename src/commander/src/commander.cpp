@@ -17,8 +17,10 @@ namespace rvt = rviz_visual_tools;
 float pregrasp_offset = 0.05;
 
 // move to target pose
-void moveToPose(geometry_msgs::Pose target_pose)
-{
+bool moveToPose(geometry_msgs::Pose target_pose){
+  ros::AsyncSpinner spinner(1);
+  spinner.start();
+
   moveit::planning_interface::MoveGroupInterface move_group_interface(PLANNING_GROUP);
   moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
   const moveit::core::JointModelGroup* joint_model_group = move_group_interface.getCurrentState()->getJointModelGroup(PLANNING_GROUP);
@@ -45,12 +47,27 @@ void moveToPose(geometry_msgs::Pose target_pose)
             move_group_interface.getJointModelGroupNames().end(), std::ostream_iterator<std::string>(std::cout, ", "));
 
   // we call the planner to compute the plan and visualize it.
-  move_group_interface.setPoseTarget(target_pose);
+  // move_group_interface.setPlanningTime(15.0);
+  tf2::Quaternion q;
+  q.setRPY(-M_PI/2,-M_PI/2+M_PI/4,-M_PI/2);  //! change
+  // q.setRPY(M_PI,M_PI/2,0);
+  geometry_msgs::Quaternion quat;
+  quat = tf2::toMsg(q);
+  geometry_msgs::Pose constrained_pose;
+  constrained_pose.orientation = quat;
+  constrained_pose.position = target_pose.position;
+  constrained_pose.position.x -= 0.03; //! change
+  // (0.192 - 0.061525); // offset between our end-effector gripping point and tool_frame for robotiq ee
+  move_group_interface.setPoseTarget(constrained_pose);
 
   // make plan
   moveit::planning_interface::MoveGroupInterface::Plan my_plan;
   bool success = (move_group_interface.plan(my_plan) == moveit::core::MoveItErrorCode::SUCCESS);
   ROS_INFO_NAMED("tutorial", "Visualizing plan 1 (pose goal) %s", success ? "" : "FAILED");
+
+  if(!success){
+    return false;
+  }
 
   // visualize plan
   ROS_INFO_NAMED("tutorial", "Visualizing plan 1 as trajectory line");
@@ -58,13 +75,17 @@ void moveToPose(geometry_msgs::Pose target_pose)
   visual_tools.publishText(text_pose, "Pose Goal", rvt::WHITE, rvt::XLARGE);
   visual_tools.publishTrajectoryLine(my_plan.trajectory_, joint_model_group);
   visual_tools.trigger();
+  visual_tools.prompt("Execute multiframe move?");
+
 
   // execute plan
-  visual_tools.prompt("execute?");
-  move_group_interface.move();
+  moveit::planning_interface::MoveItErrorCode moved = move_group_interface.move();
+  if (moved == moveit::planning_interface::MoveItErrorCode::SUCCESS){
+    return true;
+  }
+  return false;
 
 }
-
 
 void cartesianMove()
 {
@@ -420,12 +441,12 @@ int main(int argc, char** argv)
   spinner.start();
 
   geometry_msgs::Pose target_pose;
-  target_pose.position.x = 0.4;
-  target_pose.position.y = 0;
-  target_pose.position.z = 0.7;
+  target_pose.position.x = 1.15-0.4;
+  target_pose.position.y = -0.19;
+  target_pose.position.z = 0.62;
 
   // move to pose with orientation constrained (hard-coded)
-  moveToPoseConstrained(target_pose);
+  moveToPose(target_pose);
 
   // series of cartesian moves
   // cartMoveToPoi();

@@ -125,8 +125,8 @@ public:
     ROS_INFO_STREAM("Marker size min: " << min_marker_size << "% of image area");
     ROS_INFO_STREAM("Detection mode: " << detection_mode);
 
-    image_sub = it.subscribe("/camera/color/image_raw", 1, &ArucoSimple::image_callback, this);
-    cam_info_sub = nh.subscribe("/camera/color/camera_info", 1, &ArucoSimple::cam_info_callback, this);
+    image_sub = it.subscribe("/image", 1, &ArucoSimple::image_callback, this);
+    cam_info_sub = nh.subscribe("/camera_info", 1, &ArucoSimple::cam_info_callback, this);
 
     image_pub = it.advertise("result", 1);
     debug_pub = it.advertise("debug", 1);
@@ -138,9 +138,9 @@ public:
 
     nh.param<double>("marker_size", marker_size, 0.05);
     nh.param<int>("marker_id", marker_id, 300);
-    nh.param<std::string>("reference_frame", reference_frame, "realsense_frame");  // camera_color_frame for kinova & realsense_frame
-    nh.param<std::string>("camera_frame", camera_frame, "realsense_frame");
-    nh.param<std::string>("marker_frame", marker_frame, "aruco_marker");
+    nh.param<std::string>("reference_frame", reference_frame, "");
+    nh.param<std::string>("camera_frame", camera_frame, "");
+    nh.param<std::string>("marker_frame", marker_frame, "");
     nh.param<bool>("image_is_rectified", useRectifiedImages, true);
 
     ROS_ASSERT(camera_frame != "" && marker_frame != "");
@@ -184,17 +184,13 @@ public:
 
   void image_callback(const sensor_msgs::ImageConstPtr& msg)
   {
-    ROS_INFO("image_callback_JP");
     if ((image_pub.getNumSubscribers() == 0) && (debug_pub.getNumSubscribers() == 0)
         && (pose_pub.getNumSubscribers() == 0) && (transform_pub.getNumSubscribers() == 0)
         && (position_pub.getNumSubscribers() == 0) && (marker_pub.getNumSubscribers() == 0)
         && (pixel_pub.getNumSubscribers() == 0))
     {
-      ROS_INFO("No subscribers, not looking for ArUco markers");
-      // return;
-    }
-    else{
-      ROS_INFO("Looking for ArUco markers");
+      ROS_DEBUG("No subscribers, not looking for ArUco markers");
+      return;
     }
 
     static tf::TransformBroadcaster br;
@@ -212,12 +208,10 @@ public:
         // ok, let's detect
         mDetector.detect(inImage, markers, camParam, marker_size, false);
         // for each marker, draw info and its boundaries in the image
-        ROS_INFO("JP: markers.size() = %d", markers.size());
         for (std::size_t i = 0; i < markers.size(); ++i)
         {
           // only publishing the selected marker
-          ROS_INFO_STREAM("Marker " << markers[i].id << " detected ==" << marker_id);
-          if (markers[i].id == 200)
+          if (markers[i].id == marker_id)
           {
             tf::Transform transform = aruco_ros::arucoMarker2Tf(markers[i]);
             tf::StampedTransform cameraToReference;
@@ -242,8 +236,6 @@ public:
             geometry_msgs::TransformStamped transformMsg;
             tf::transformStampedTFToMsg(stampedTransform, transformMsg);
             transform_pub.publish(transformMsg);
-            ROS_INFO_STREAM("Published transform from " << reference_frame << " to " << marker_frame << ":\n"
-                                                        << transformMsg);
 
             geometry_msgs::Vector3Stamped positionMsg;
             positionMsg.header = transformMsg.header;
@@ -313,9 +305,6 @@ public:
         ROS_ERROR("cv_bridge exception: %s", e.what());
         return;
       }
-    }
-    else{
-      ROS_INFO("No camera info received yet");
     }
   }
 

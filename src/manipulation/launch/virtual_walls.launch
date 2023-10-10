@@ -1,0 +1,7 @@
+<launch>
+
+  <node name="virtual_walls" pkg="manipulation" type="virtual_walls" respawn="false" output="screen">
+  </node>
+  
+
+</launch>

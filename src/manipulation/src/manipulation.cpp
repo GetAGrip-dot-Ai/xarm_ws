@@ -68,7 +68,6 @@ namespace pc
 #define ROS_MAGENTA_STREAM_COND(c, x) ROS_INFO_STREAM_COND(c, pc::MAGENTA << x << pc::ENDCOLOR)
 #define ROS_CYAN_STREAM_COND(c, x)    ROS_INFO_STREAM_COND(c, pc::CYAN    << x << pc::ENDCOLOR)
 
-
 // initialize values for MoveIt
 const double tau = 2 * M_PI;
 static const std::string PLANNING_GROUP = "xarm6";
@@ -92,11 +91,13 @@ ros::ServiceClient vs_client;
 ros::Time found_poi;
 int frame_id = 0;
 
-// empirical offset values //! need to change
+// empirical offset values //! need to tune these
 float pregrasp_offset = 0.095;
 float pregrasp_offset_far = 0.215;
 float pregrasp_offset_z = 0.03; 
-
+float ee_offset = 0.12;  // (0.192 - 0.061525) offset between our end-effector gripping point and tool_frame for robotiq ee
+float depth_check = 0.03;
+float move_back_pregrasp = 0.18;
 
 // move to target pose
 bool moveToPose(geometry_msgs::Pose target_pose){
@@ -131,14 +132,15 @@ bool moveToPose(geometry_msgs::Pose target_pose){
   // we call the planner to compute the plan and visualize it.
   // move_group_interface.setPlanningTime(15.0);
   tf2::Quaternion q;
-  q.setRPY(-M_PI/2,-M_PI/2,-M_PI/2);  //! change
+  q.setRPY(-M_PI/2,-M_PI/2+M_PI/4,-M_PI/2);  //should be good for xarm
+  // q.setRPY(M_PI,M_PI/2,0);
   geometry_msgs::Quaternion quat;
   quat = tf2::toMsg(q);
   geometry_msgs::Pose constrained_pose;
   constrained_pose.orientation = quat;
   constrained_pose.position = target_pose.position;
-  constrained_pose.position.x -= 0.03; //! change
-  // (0.192 - 0.061525); // offset between our end-effector gripping point and tool_frame for robotiq ee
+  constrained_pose.position.x -= ee_offset;
+
   move_group_interface.setPoseTarget(constrained_pose);
 
   // make plan
@@ -248,7 +250,7 @@ bool cartMoveToPreGrasp(){
   geometry_msgs::PoseStamped current_pose = move_group_interface.getCurrentPose();
   geometry_msgs::Pose next_pose = current_pose.pose;
 
-  next_pose.position.x -= 0.18; //! change
+  next_pose.position.x -= move_back_pregrasp;
   waypoints.push_back(next_pose);
 
   moveit_msgs::RobotTrajectory trajectory;
@@ -323,7 +325,7 @@ bool moveToBasket(){
   }
 
   // set new J0 value
-  joint_group_positions[0] = J0+alpha+M_PI/3; // move 60 degrees //! need to tune
+  joint_group_positions[0] = J0+alpha+M_PI/3; // move 60 degrees //! need to change based on where basket is
   move_group_interface.setJointValueTarget(joint_group_positions);
 
   moveit::planning_interface::MoveGroupInterface::Plan my_plan;
@@ -372,7 +374,7 @@ bool moveToPG2ForVS() {
 
   // we call the planner to compute the plan and visualize it.
   tf2::Quaternion q;
-  q.setRPY(-M_PI/2,-M_PI/2,-M_PI/2);; //kinovas
+  q.setRPY(-M_PI/2,-M_PI/2+M_PI/4,-M_PI/2);; //xarm
   geometry_msgs::Quaternion quat;
   quat = tf2::toMsg(q);
   geometry_msgs::Pose constrained_pose;
@@ -435,7 +437,7 @@ bool mfRotation(){
   double J0 = joint_group_positions[0];
 
   // rotate 2 degrees
-  joint_group_positions[0] = J0-M_PI/90;
+  joint_group_positions[0] = J0-M_PI/90; // move 2 degrees
   move_group_interface.setJointValueTarget(joint_group_positions);
 
   moveit::planning_interface::MoveGroupInterface::Plan my_plan;
@@ -474,8 +476,8 @@ bool harvestSrvCallback(manipulation::harvest::Request& request, manipulation::h
   switch (state) {
     case 0:{ // move to reset pose
       std::cout << "moving to reset pose" << std::endl;
-      reset_pose.position.x = 0.1;
-      reset_pose.position.y = 0;
+      reset_pose.position.x = 0.3;
+      reset_pose.position.y = 0.0;
       reset_pose.position.z = 0.5;
       bool success = moveToPose(reset_pose);
       if(success==true){
@@ -493,20 +495,20 @@ bool harvestSrvCallback(manipulation::harvest::Request& request, manipulation::h
       bool moved;
       if (approach_pose_num == 0){ // approach pose 1
         approach_pose.position.x = 0.3;
-        approach_pose.position.y = 0;
-        approach_pose.position.z = 0.65;
+        approach_pose.position.y = 0.0;
+        approach_pose.position.z = 0.6;
         moved = moveToPose(approach_pose);
       }
       else if (approach_pose_num == 1){ // approach pose 2
         approach_pose.position.x = 0.3;
-        approach_pose.position.y = 0.16;
+        approach_pose.position.y = 0.3;
         approach_pose.position.z = 0.6;
         moved = moveToPose(approach_pose);
       }
       else if (approach_pose_num == 2){ // approach pose 3
         approach_pose.position.x = 0.3;
-        approach_pose.position.y = 0.03;
-        approach_pose.position.z = 0.56;
+        approach_pose.position.y = 0.3;
+        approach_pose.position.z = 0.5;
         moved = moveToPose(approach_pose);
       }
       else {
@@ -550,18 +552,20 @@ bool harvestSrvCallback(manipulation::harvest::Request& request, manipulation::h
 
       // move to pre-grasp POI pose
       ros::Time got_poi = ros::Time::now();
-      ROS_RED_STREAM("Time diff: "<< (got_poi - found_poi));
+      // ROS_RED_STREAM("Time diff: "<< (got_poi - found_poi));
       std::cout << "moving to pre-grasp pose" << std::endl;
       pregrasp_pose = poi_pose;
-      if(poi_pose.position.x < 0.3){
+      if(poi_pose.position.x < depth_check){
         depth_failed = 1;
         ROS_RED_STREAM("DEPTH FAILED");
         pregrasp_pose.position.x = 0.3;
 
       }
       else{
-        pregrasp_pose.position.x -= (pregrasp_offset_far-0.015); //! change?
+        // adding a pregrasp offset in the depth
+        pregrasp_pose.position.x -= pregrasp_offset_far;
       }
+      // adding a pregrasp offset in the z (height) so that visual servoing can see the peduncle better
       pregrasp_pose.position.z -= pregrasp_offset_z;
       bool success = moveToPose(pregrasp_pose);
       std::cout << "moved to pre grasp" << std::endl;
@@ -605,7 +609,7 @@ bool harvestSrvCallback(manipulation::harvest::Request& request, manipulation::h
       return 1;
 
     }
-  
+
     case 10:{ // visual servoing
       ROS_INFO("start visual servoing");
 
@@ -627,7 +631,6 @@ bool harvestSrvCallback(manipulation::harvest::Request& request, manipulation::h
 
         // check
         int did_vs = vs_srv.response.reply;
-        // ros::Duration(5).sleep();
 
         // if VS succeeded, move to updated poi
         if(did_vs==1){
@@ -653,10 +656,10 @@ bool harvestSrvCallback(manipulation::harvest::Request& request, manipulation::h
         // if VS failed, move to old poi
         else{
           ROS_BLUE_STREAM("Visual Servoing failed in perception world");
-          // move to pre grasp 2 with joint space move
+          // move to pre grasp 2
           pregrasp_pose2 = poi_pose;
-          pregrasp_pose2.position.x -= (pregrasp_offset-0.015); //! change?
-          pregrasp_pose2.position.z += (pregrasp_offset_z-0.01); //! change?
+          pregrasp_pose2.position.x -= pregrasp_offset;
+          pregrasp_pose2.position.z += pregrasp_offset_z;
           bool success1 = moveToPose(pregrasp_pose2);
           if (!success1){
             ROS_BLUE_STREAM("Moving to pre grasp 2 failed - telling system VS failed");

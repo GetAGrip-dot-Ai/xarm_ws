@@ -1,0 +1,7 @@
+<launch>
+
+  <node name="testing" pkg="manipulation" type="testing" respawn="false" output="screen">
+  </node>
+  
+
+</launch>
